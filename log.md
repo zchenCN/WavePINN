@@ -1,2 +1,4 @@
 - Forget optimizer.zero_grad()
-- 
+- LBFGS perform much better than Adam
+- Verify the analytical solution of the PDE
+- After modify, refresh the memory of notebook
