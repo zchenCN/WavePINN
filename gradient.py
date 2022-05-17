@@ -35,7 +35,7 @@ class GradientLayer(nn.Module):
             u: network output.
             du_dt: 1st derivative of t.
             du_dx: 1st derivative of x.
-            du_dx: 1st derivative of z
+            du_dz: 1st derivative of z
             d2u_dt2: 2nd derivative of t.
             d2u_dx2: 2nd derivative of x.
             d2u_dz2: 2nd derivative of z
