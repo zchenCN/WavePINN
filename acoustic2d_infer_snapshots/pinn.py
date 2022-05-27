@@ -5,6 +5,7 @@ wave equations with two time snapshot wavefield data
 @data: 2022-05-17
 """
 
+from argparse import ArgumentError
 import timeit
 import torch
 import torch.nn as nn
@@ -32,8 +33,14 @@ class PINN:
             c: wave velocity. Default is 1.
         """
         self.network = network
-        self.c = c
         self.device = next(network.parameters()).device
+        if isinstance(c, float):
+            self.c = c
+        elif isinstance(c, np.ndarray):
+            self.c = torch.tensor(c, dtype=torch.float64, device=self.device)
+        else:
+            raise ArgumentError('c should be constant or ndarray')
+            
         self.grads = GradientLayer(self.network)
 
         # Data preprocess
@@ -55,7 +62,7 @@ class PINN:
         self.U_test = U_test
 
         # Optimizer
-        self.max_num_epoch = 400000
+        self.max_num_epoch = 100000
         self.interval = 1000
         self.num_epoch = 0
         self.optimizer_lbfgs = torch.optim.LBFGS(
@@ -71,7 +78,7 @@ class PINN:
 
         self.optimizer_adam = torch.optim.Adam(
             network.parameters(), 
-            lr=0.0001
+            lr=0.001
         )
         self.loss_list = list()
         self.loss_pde_list = list()
@@ -93,26 +100,26 @@ class PINN:
         loss_init_val = torch.mean(torch.square(u_init - self.U_init))       
         return loss_init_val 
 
-    def loss_lbfgs(self, wp=0.1, wi=1.0):
-        loss_pde_val = self.loss_pde()
-        loss_init_val = self.loss_init()
-        loss_val = wp*loss_pde_val + wi*loss_init_val
+    # def loss_lbfgs(self, wp=0.1, wi=1.0):
+    #     loss_pde_val = self.loss_pde()
+    #     loss_init_val = self.loss_init()
+    #     loss_val = wp*loss_pde_val + wi*loss_init_val
 
-        if self.num_epoch % self.interval == 0:
-            self.stop = timeit.default_timer()
-            self.loss_list.append(loss_val.item())
-            self.loss_init_list.append(loss_init_val.item())
-            self.loss_pde_list.append(loss_pde_val.item())
-            error_val = self.error()
-            self.error_list.append(error_val)
-            print(f'Epoch: {self.num_epoch}'.ljust(12), f'   Error: {error_val:.4f}',f'  Loss: {loss_val.item():.8f}', f'  Loss pde: {loss_pde_val.item():.8f}',
-            f'  Loss init: {loss_init_val.item():.8f}', f'  Time: {self.stop-self.start:.1f}')
-        self.optimizer_lbfgs.zero_grad()
-        loss_val.backward()
-        self.num_epoch += 1
-        return loss_val       
+    #     if self.num_epoch % self.interval == 0:
+    #         self.stop = timeit.default_timer()
+    #         self.loss_list.append(loss_val.item())
+    #         self.loss_init_list.append(loss_init_val.item())
+    #         self.loss_pde_list.append(loss_pde_val.item())
+    #         error_val = self.error()
+    #         self.error_list.append(error_val)
+    #         print(f'Epoch: {self.num_epoch}'.ljust(12), f'   Error: {error_val:.4f}',f'  Loss: {loss_val.item():.8f}', f'  Loss pde: {loss_pde_val.item():.8f}',
+    #         f'  Loss init: {loss_init_val.item():.8f}', f'  Time: {self.stop-self.start:.1f}')
+    #     self.optimizer_lbfgs.zero_grad()
+    #     loss_val.backward()
+    #     self.num_epoch += 1
+    #     return loss_val       
 
-    def loss(self, wp=0.000001, wi=1.0): # [wp, error]: [1.0, ]
+    def loss(self, wp=0.00001, wi=1.0): # [wp, error]: [1.0, ]
         loss_pde_val = self.loss_pde()
         loss_init_val = self.loss_init()
         loss_val = wp*loss_pde_val + wi*loss_init_val

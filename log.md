@@ -3,3 +3,4 @@
 - Verify the analytical solution of the PDE
 - After modify, refresh the memory of notebook
 - Remember loss.item() when append the value of loss in the list
+- Training process may slow in the beginning and then accelarate later
